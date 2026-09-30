@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Les Petits Défis CE1 - Fluence lecture</title>
+<style>
+:root{
+ --navy:#163a5f;--orange:#f2b36d;--cream:#fff8ee;--green:#2f8f57;
+ --red:#c94c4c;--blue:#eaf5ff;--pink:#f8e8ef;--mint:#eaf7ec;--purple:#6c63d9;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(180deg,#fff7ec,#fce1bd);color:var(--navy)}
+.app{max-width:1050px;margin:auto;padding:18px}
+.shell{background:#fff;border:3px solid #ecd5b7;box-shadow:0 10px 26px rgba(0,0,0,.1);overflow:hidden}
+header{text-align:center;padding:18px;background:linear-gradient(135deg,#ffe7bd,#ffd49b 55%,#fff0d3)}
+.brand{font-weight:900;font-size:14px;text-transform:uppercase;letter-spacing:.6px}
+h1{margin:6px 0;font-size:clamp(28px,4vw,44px)}
+.sub{font-weight:700;color:#5f6870}
+main{padding:18px}
+.menu{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.levelBtn{background:#fff;color:var(--navy);border:2px solid #e4caaa;padding:14px;text-align:left;font-size:18px;font-weight:900;cursor:pointer}
+.levelBtn:hover{background:#fff4df}
+.top{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:15px}
+.stat{background:#fff8ef;border:2px solid #e7cfaa;text-align:center;padding:10px;font-weight:900}
+.stat strong{display:block;font-size:26px;margin-top:4px}
+.timer.warn{color:#b56a00} .timer.danger{color:var(--red)}
+.card{background:#fffaf3;border:2px solid #ead3b5;padding:18px}
+.title{font-size:30px;font-weight:900;margin-bottom:6px}
+.level{display:inline-block;background:#e9f6ff;border:2px solid #bdddf2;padding:6px 10px;font-weight:900;margin-bottom:14px}
+.prep{background:var(--blue);padding:14px;border:2px solid #bdddf2;margin-bottom:14px}
+.prep h3{margin:0 0 10px}
+.wordBtns{display:flex;gap:8px;flex-wrap:wrap}
+.wordBtn{background:#fff;border:2px solid #8cbad7;color:var(--navy);padding:10px 14px;font-size:18px;font-weight:900;cursor:pointer}
+.textBox{background:#fff;border:2px solid #ccd7df;padding:18px;line-height:1.8;font-size:25px;font-weight:700}
+.word{display:inline-block;margin-right:7px;margin-bottom:5px;padding:2px 3px;border-radius:4px;cursor:pointer}
+.word:hover{background:#fff1c9}
+.word.marked{background:#dff3e5}
+.word.recognized{background:#c9f0d3;box-shadow:inset 0 -3px 0 #2f8f57}
+.syllable{display:inline-block;padding:1px 1px;border-radius:3px;transition:background .12s,color .12s}
+.syllable.live{background:#fff0a8}
+.syllable.done{background:#bfe8c9;color:#0e5b2f}
+
+.mic{background:#c94c4c}.manual{background:#687b8b}.micStatus{text-align:center;font-weight:900;margin:8px 0;color:#5f6870}.micStatus.on{color:#2f8f57}.micStatus.err{color:#c94c4c}
+.instructions{background:#fff4da;border:2px solid #efd17e;padding:10px 12px;font-weight:800;margin:12px 0}
+.actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:16px 0}
+button.action{border:none;color:#fff;padding:13px 18px;font-size:18px;font-weight:900;cursor:pointer}
+.start{background:var(--green)} .model{background:#d58c32} .repeat{background:var(--navy)} .next{background:var(--purple)} .home{background:#7b8792}
+.result{text-align:center;font-weight:900;font-size:22px;min-height:36px}
+.trials{background:var(--mint);padding:12px;border:2px solid #b9dfc0;margin-top:14px}
+.trialGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.trial{background:#fff;padding:10px;text-align:center;border:1px solid #c9d8cd;font-weight:900}
+.quiz{margin-top:18px;background:var(--pink);border:2px solid #e9bfd0;padding:15px}
+.q{margin-bottom:16px}
+.qtitle{font-weight:900;font-size:19px;margin-bottom:8px}
+.choice{display:block;width:100%;margin:6px 0;padding:10px;background:#fff;border:2px solid #d6b9c4;color:var(--navy);font-weight:800;cursor:pointer;text-align:left}
+.choice.correct{border-color:var(--green);background:#edf9f0}
+.choice.wrong{border-color:var(--red);background:#fdecec}
+.hidden{display:none!important}
+@media(max-width:800px){.menu{grid-template-columns:1fr}.top{grid-template-columns:1fr 1fr}.trialGrid{grid-template-columns:1fr}.textBox{font-size:22px}}
+@media(max-width:480px){.top{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app"><div class="shell">
+<header>
+<div class="brand">Les Petits Défis CE1</div>
+<h1>Je m'entraîne à lire</h1>
+<div class="sub">Mots difficiles • lecture chronométrée • débit en mots/minute • compréhension</div>
+</header>
+<main>
+<section id="menuView">
+  <h2>Choisis un texte</h2>
+  <div id="menu" class="menu"></div>
+</section>
+
+<section id="gameView" class="hidden">
+  <div class="top">
+    <div class="stat">Essai<strong id="trialStat">1 / 3</strong></div>
+    <div class="stat">Temps<strong id="timer" class="timer">1:00</strong></div>
+    <div class="stat">Meilleur débit<strong id="best">—</strong></div>
+    <div class="stat">Moyenne<strong id="average">—</strong></div>
+  </div>
+
+  <div class="card">
+    <div class="title" id="title"></div>
+    <div class="level" id="level"></div>
+
+    <div class="prep">
+      <h3>1. Je prépare les mots difficiles</h3>
+      <div id="prepWords" class="wordBtns"></div>
+    </div>
+
+    <div class="instructions">
+      2. Écoute le texte si tu veux. Pour t'entraîner seul à la maison, utilise
+      <strong>🎤 Lecture avec le micro</strong>. Le jeu essaiera de reconnaître la lecture et de mettre en surbrillance les syllabes correctement reconnues.
+      Si le micro comprend mal, utilise le <strong>mode manuel</strong>.
+    </div>
+
+    <div id="textBox" class="textBox"></div>
+
+    <div class="actions">
+      <button class="action model" id="listenBtn">🔊 Écouter le texte</button>
+      <button class="action mic" id="micBtn">🎤 Lecture avec le micro</button>
+      <button class="action manual" id="startBtn">✋ Mode manuel</button>
+      <button class="action repeat hidden" id="repeatBtn">↻ Nouvel essai</button>
+    </div>
+
+    <div id="micStatus" class="micStatus">Le micro est recommandé sur Chrome ou Edge, via une page HTTPS.</div>
+    <div class="result" id="result"></div>
+
+    <div class="trials">
+      <strong>Mes essais</strong>
+      <div class="trialGrid">
+        <div class="trial">Essai 1<br><span id="t1">—</span></div>
+        <div class="trial">Essai 2<br><span id="t2">—</span></div>
+        <div class="trial">Essai 3<br><span id="t3">—</span></div>
+      </div>
+    </div>
+
+    <div id="quiz" class="quiz hidden">
+      <h3>3. Je comprends ce que je lis</h3>
+      <div id="quizBody"></div>
+    </div>
+
+    <div class="actions">
+      <button class="action home" id="homeBtn">Choisir un autre texte</button>
+      <button class="action next" id="nextBtn">Texte suivant</button>
+    </div>
+  </div>
+</section>
+</main>
+</div></div>
+
+<script>
+const texts=[{"level": "Niveau 1", "title": "Milo et le chat", "prep": ["main", "œil", "vers", "gamelle"], "text": "Milo a un petit chat. Le chat dort sur le tapis. Milo pose sa main près de lui. Le chat ouvre un œil, puis il se lève. Il court vite vers sa gamelle.", "qs": [{"q": "Où dort le chat ?", "choices": ["Sur le tapis", "Dans le jardin", "Sur le lit"], "a": 0}, {"q": "Où court-il à la fin ?", "choices": ["Vers la porte", "Vers sa gamelle", "Vers Milo"], "a": 1}]}, {"level": "Niveau 1", "title": "La balle rouge", "prep": ["lance", "puis", "baisse", "reprend"], "text": "Lina joue avec une balle rouge. Elle lance la balle dans la cour. La balle roule sous une table, puis passe près de la porte. Lina court, se baisse et reprend sa balle.", "qs": [{"q": "De quelle couleur est la balle ?", "choices": ["Bleue", "Rouge", "Verte"], "a": 1}, {"q": "Où roule-t-elle ?", "choices": ["Sous une table", "Dans un sac", "Sous un lit"], "a": 0}]}, {"level": "Niveau 2", "title": "Le goûter de Noé", "prep": ["verre", "sœur", "cuisine", "tranquillement"], "text": "Noé prépare son goûter. Il prend une banane, un petit gâteau et un verre d’eau. Sa sœur arrive dans la cuisine. Noé coupe le gâteau en deux et le partage avec elle. Tous les deux mangent tranquillement.", "qs": [{"q": "Que prend Noé pour son goûter ?", "choices": ["Une banane, un gâteau et de l’eau", "Une pomme et du lait", "Du pain et du jus"], "a": 0}, {"q": "Avec qui partage-t-il le gâteau ?", "choices": ["Son frère", "Sa sœur", "Son ami"], "a": 1}]}, {"level": "Niveau 2", "title": "Après la pluie", "prep": ["pluie", "se forment", "soleil", "revient"], "text": "La pluie tombe depuis le matin. Dans la cour, de grandes flaques se forment. Maya met ses bottes jaunes et sort avec son père. Elle saute dans une flaque, puis dans une autre. Enfin, le soleil revient.", "qs": [{"q": "Que met Maya avant de sortir ?", "choices": ["Ses bottes jaunes", "Son bonnet", "Ses sandales"], "a": 0}, {"q": "Que se passe-t-il à la fin ?", "choices": ["La pluie augmente", "Le soleil revient", "Maya rentre à l’école"], "a": 1}]}, {"level": "Niveau 3", "title": "Sur la plage", "prep": ["famille", "coquillage", "mouille", "loin"], "text": "Ce matin, Léo va à la plage avec sa famille. Il marche au bord de l’eau et cherche des coquillages. Sa petite sœur construit un château de sable. Une vague arrive et mouille leurs pieds. Les enfants rient, puis recommencent leur jeu un peu plus loin.", "qs": [{"q": "Que cherche Léo ?", "choices": ["Des poissons", "Des coquillages", "Des crabes"], "a": 1}, {"q": "Pourquoi les enfants vont-ils un peu plus loin ?", "choices": ["Une vague a mouillé leurs pieds", "Ils ont faim", "Ils rentrent à la maison"], "a": 0}]}, {"level": "Niveau 3", "title": "Le colibri", "prep": ["instant", "vers", "presque", "longtemps"], "text": "Dans le jardin, Ana observe un petit colibri. L’oiseau vole très rapidement d’une fleur à l’autre. Il reste un instant devant une rose, puis repart vers un arbre. Ana ne bouge presque plus. Elle veut regarder l’oiseau le plus longtemps possible sans lui faire peur.", "qs": [{"q": "Que regarde Ana ?", "choices": ["Un colibri", "Un papillon", "Un chat"], "a": 0}, {"q": "Pourquoi Ana reste-t-elle presque immobile ?", "choices": ["Elle est fatiguée", "Elle ne veut pas faire peur à l’oiseau", "Elle attend son père"], "a": 1}]}, {"level": "Niveau 4", "title": "Le marché du samedi", "prep": ["accompagne", "fruits", "panier", "jusqu’à"], "text": "Le samedi matin, Tom accompagne sa grand-mère au marché. Les étals sont remplis de fruits et de légumes. Une vendeuse leur montre de belles mangues bien mûres. La grand-mère en choisit quatre et les pose dans son panier. Avant de rentrer, Tom aide à porter les achats jusqu’à la voiture.", "qs": [{"q": "Que choisit la grand-mère ?", "choices": ["Quatre mangues", "Deux bananes", "Trois oranges"], "a": 0}, {"q": "Comment Tom aide-t-il sa grand-mère ?", "choices": ["Il paie les achats", "Il porte les achats jusqu’à la voiture", "Il range le marché"], "a": 1}]}, {"level": "Niveau 4", "title": "Une surprise dans la cour", "prep": ["entendent", "bruit", "suivent", "yeux"], "text": "Pendant la récréation, les élèves entendent un drôle de bruit près du grand arbre. Ils s’approchent doucement et découvrent un petit oiseau posé sur une branche basse. La maîtresse demande à chacun de garder le silence. Après quelques minutes, l’oiseau ouvre ses ailes et s’envole au-dessus de la cour. Les enfants le suivent des yeux jusqu’à ce qu’il disparaisse.", "qs": [{"q": "Où est posé le petit oiseau ?", "choices": ["Sur le toit", "Sur une branche basse", "Sur un banc"], "a": 1}, {"q": "Pourquoi les élèves gardent-ils le silence ?", "choices": ["Pour ne pas effrayer l’oiseau", "Parce qu’ils lisent", "Parce que la récréation est finie"], "a": 0}]}];
+let idx=0, trial=1, seconds=60, timerId=null, running=false, waitingMark=false;
+let scores=[null,null,null];
+let rates=[null,null,null];
+let durations=[null,null,null];
+let attemptStartTime=null;
+let micMode=false, recognition=null, recognizedCount=0, nextExpected=0;
+let recognitionRestartAllowed=false;
+
+const menu=document.getElementById("menu");
+const menuView=document.getElementById("menuView");
+const gameView=document.getElementById("gameView");
+const title=document.getElementById("title");
+const level=document.getElementById("level");
+const prepWords=document.getElementById("prepWords");
+const textBox=document.getElementById("textBox");
+const timer=document.getElementById("timer");
+const trialStat=document.getElementById("trialStat");
+const best=document.getElementById("best");
+const average=document.getElementById("average");
+const result=document.getElementById("result");
+const startBtn=document.getElementById("startBtn");
+const micBtn=document.getElementById("micBtn");
+const micStatus=document.getElementById("micStatus");
+const repeatBtn=document.getElementById("repeatBtn");
+const quiz=document.getElementById("quiz");
+const quizBody=document.getElementById("quizBody");
+
+function buildMenu(){
+ menu.innerHTML="";
+ texts.forEach((t,i)=>{
+   const b=document.createElement("button");
+   b.className="levelBtn";
+   b.innerHTML=`${i+1}. ${t.title}<br><small>${t.level} • ${t.text.split(/\s+/).length} mots</small>`;
+   b.onclick=()=>openText(i);
+   menu.appendChild(b);
+ });
+}
+
+function openText(i){
+ idx=i; trial=1; scores=[null,null,null]; rates=[null,null,null]; durations=[null,null,null]; attemptStartTime=null; stopTimer(); seconds=60; running=false; waitingMark=false;
+ average.textContent="—";
+ menuView.classList.add("hidden"); gameView.classList.remove("hidden");
+ render();
+}
+
+
+function splitSyllables(word){
+ const original=word;
+ const lead=(original.match(/^[^A-Za-zÀ-ÿŒœ]+/)||[""])[0];
+ const tail=(original.match(/[^A-Za-zÀ-ÿŒœ]+$/)||[""])[0];
+ const core=original.slice(lead.length, original.length-tail.length);
+ if(!core)return [original];
+
+ const vowels="aeiouyàâäéèêëîïôöùûüÿœ";
+ const isV=c=>vowels.includes(c.toLowerCase());
+ const clusters=["bl","br","cl","cr","dr","fl","fr","gl","gr","pl","pr","tr","vr","ch","ph","gn"];
+
+ let parts=[], start=0, i=0;
+ while(i<core.length){
+   while(i<core.length && !isV(core[i])) i++;
+   if(i>=core.length) break;
+   while(i+1<core.length && isV(core[i+1])) i++;
+   let j=i+1;
+   while(j<core.length && !isV(core[j])) j++;
+   if(j>=core.length) break;
+
+   const cons=core.slice(i+1,j);
+   let cut;
+   if(cons.length<=1) cut=i+1;
+   else{
+     const last2=cons.slice(-2).toLowerCase();
+     if(clusters.includes(last2)) cut=j-2;
+     else cut=j-1;
+   }
+   if(cut<=start) cut=i+1;
+   parts.push(core.slice(start,cut));
+   start=cut;
+   i=start;
+ }
+ parts.push(core.slice(start));
+ parts=parts.filter(Boolean);
+
+ // Keep a final silent e with the previous syllable.
+ if(parts.length>1 && /^[eE]s?$/.test(parts[parts.length-1])){
+   parts[parts.length-2]+=parts.pop();
+ }
+
+ if(lead)parts[0]=lead+parts[0];
+ if(tail)parts[parts.length-1]+=tail;
+ return parts.length?parts:[original];
+}
+
+function renderWordSyllables(span,word){
+ span.innerHTML="";
+ const sylls=splitSyllables(word);
+ sylls.forEach((sy,si)=>{
+   const ss=document.createElement("span");
+   ss.className="syllable";
+   ss.textContent=sy;
+   ss.dataset.syllable=si;
+   span.appendChild(ss);
+ });
+}
+
+function clearLiveSyllables(){
+ [...textBox.querySelectorAll(".syllable.live")].forEach(s=>s.classList.remove("live"));
+}
+
+function markWordDone(wordIndex){
+ const word=textBox.querySelector(`.word[data-i="${wordIndex}"]`);
+ if(!word)return;
+ word.classList.add("recognized");
+ [...word.querySelectorAll(".syllable")].forEach(s=>{
+   s.classList.remove("live");
+   s.classList.add("done");
+ });
+}
+
+function previewCurrentSyllables(interimText){
+ clearLiveSyllables();
+ if(!interimText.trim())return;
+
+ const target=texts[idx].text.split(/\s+/);
+ if(nextExpected>=target.length)return;
+
+ const spokenWords=interimText.trim().split(/\s+/);
+ const sw=spokenWords[spokenWords.length-1]||"";
+ const expected=target[nextExpected];
+ const a=normalizeWord(sw), b=normalizeWord(expected);
+ if(!a || !b)return;
+
+ let prefix=0;
+ const lim=Math.min(a.length,b.length);
+ while(prefix<lim && a[prefix]===b[prefix])prefix++;
+
+ // Speech engines often return whole words suddenly; allow a fuzzy full-word preview.
+ if(wordMatches(sw,expected)) prefix=b.length;
+ if(prefix===0)return;
+
+ const wordEl=textBox.querySelector(`.word[data-i="${nextExpected}"]`);
+ if(!wordEl)return;
+ const sylls=[...wordEl.querySelectorAll(".syllable")];
+ if(!sylls.length)return;
+
+ const ratio=Math.min(1,prefix/Math.max(1,b.length));
+ const count=Math.max(1,Math.ceil(ratio*sylls.length));
+ sylls.slice(0,count).forEach(s=>s.classList.add("live"));
+}
+
+function render(){
+ const t=texts[idx];
+ title.textContent=t.title; level.textContent=t.level;
+ prepWords.innerHTML="";
+ t.prep.forEach(w=>{
+   const b=document.createElement("button"); b.className="wordBtn"; b.textContent=w;
+   b.onclick=()=>speak(w); prepWords.appendChild(b);
+ });
+ const words=t.text.split(/\s+/);
+ textBox.innerHTML="";
+ words.forEach((w,i)=>{
+   const s=document.createElement("span"); s.className="word"; s.dataset.i=i;
+   renderWordSyllables(s,w);
+   s.onclick=()=>markLast(i);
+   textBox.appendChild(s);
+ });
+ updateTrialUI();
+ quiz.classList.add("hidden"); quizBody.innerHTML="";
+ result.textContent="";
+ stopRecognition();
+ micMode=false; recognizedCount=0; nextExpected=0;
+ startBtn.classList.remove("hidden"); micBtn.classList.remove("hidden"); repeatBtn.classList.add("hidden");
+ timer.textContent="1:00"; timer.classList.remove("warn","danger");
+ updateMicAvailability();
+}
+
+function speak(text){
+ if(!("speechSynthesis" in window))return;
+ speechSynthesis.cancel();
+ const u=new SpeechSynthesisUtterance(text);
+ u.lang="fr-FR"; u.rate=.82; speechSynthesis.speak(u);
+}
+
+document.getElementById("listenBtn").onclick=()=>speak(texts[idx].text);
+
+function normalizeWord(w){
+ return w.toLowerCase()
+   .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+   .replace(/[’']/g,"")
+   .replace(/[^a-z0-9à-ÿ]/gi,"");
+}
+
+function levenshtein(a,b){
+ const m=a.length,n=b.length;
+ const d=Array.from({length:m+1},()=>Array(n+1).fill(0));
+ for(let i=0;i<=m;i++)d[i][0]=i;
+ for(let j=0;j<=n;j++)d[0][j]=j;
+ for(let i=1;i<=m;i++)for(let j=1;j<=n;j++){
+   const cost=a[i-1]===b[j-1]?0:1;
+   d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+cost);
+ }
+ return d[m][n];
+}
+
+function wordMatches(spoken,expected){
+ const a=normalizeWord(spoken), b=normalizeWord(expected);
+ if(!a || !b)return false;
+ if(a===b)return true;
+ if(b.length>=5 && levenshtein(a,b)<=1)return true;
+ return false;
+}
+
+
+function elapsedSeconds(){
+ if(!attemptStartTime)return 60-seconds;
+ return Math.min(60, Math.max(0.1, (performance.now()-attemptStartTime)/1000));
+}
+
+function calcWpm(words,elapsed){
+ return Math.round((words*60)/Math.max(0.1,elapsed));
+}
+
+function formatSeconds(value){
+ const rounded=Math.round(value*10)/10;
+ return Number.isInteger(rounded)?String(rounded):String(rounded).replace(".",",");
+}
+
+function saveAttempt(words,elapsed,labelPrefix=""){
+ const wpm=calcWpm(words,elapsed);
+ scores[trial-1]=words;
+ rates[trial-1]=wpm;
+ durations[trial-1]=elapsed;
+ document.getElementById("t"+trial).textContent=
+   `${words} mot${words>1?"s":""} en ${formatSeconds(elapsed)} s → ${wpm} mots/min`;
+ const validRates=rates.filter(x=>x!==null);
+ best.textContent=validRates.length?Math.max(...validRates)+" mots/min":"—";
+ updateAverage();
+ return wpm;
+}
+
+function finishEarlyIfLastWordReached(lastFoundIndex){
+ if(!running || !micMode)return false;
+ const target=texts[idx].text.split(/\s+/);
+ const lastIndex=target.length-1;
+ if(lastFoundIndex!==lastIndex)return false;
+
+ const elapsed=elapsedSeconds();
+ stopTimer();
+ stopRecognition();
+ running=false;
+ waitingMark=false;
+ seconds=Math.max(0,Math.ceil(60-elapsed));
+ updateTimer();
+
+ const wpm=saveAttempt(recognizedCount,elapsed);
+ result.textContent=`Bravo ! Tu as atteint le dernier mot en ${formatSeconds(elapsed)} secondes. ${recognizedCount} mot${recognizedCount>1?"s":""} correctement reconnu${recognizedCount>1?"s":""}. Débit de lecture correcte : ${wpm} mots/min.`;
+ micStatus.textContent="Lecture terminée : le dernier mot a été atteint. Les mots mal lus ou non reconnus ne sont pas comptés comme mots corrects.";
+ micStatus.className="micStatus on";
+
+ if(trial<3) repeatBtn.classList.remove("hidden");
+ else showQuiz();
+ return true;
+}
+
+function processTranscript(transcript){
+ const spoken=transcript.trim().split(/\s+/);
+ const target=texts[idx].text.split(/\s+/);
+ const spans=[...textBox.querySelectorAll(".word")];
+ let lastFoundIndex=-1;
+
+ for(const sw of spoken){
+   let found=-1;
+   for(let j=nextExpected;j<Math.min(target.length,nextExpected+5);j++){
+     if(wordMatches(sw,target[j])){found=j;break;}
+   }
+   if(found>=0){
+     lastFoundIndex=Math.max(lastFoundIndex,found);
+     if(!spans[found].classList.contains("recognized")){
+       markWordDone(found);
+       recognizedCount++;
+     }
+     nextExpected=found+1;
+   }
+ }
+ if(finishEarlyIfLastWordReached(lastFoundIndex)) return;
+ micStatus.textContent=`🎤 Micro actif : ${recognizedCount} mot${recognizedCount>1?"s":""} reconnu${recognizedCount>1?"s":""}. Les syllabes reconnues apparaissent en vert.`;
+ micStatus.className="micStatus on";
+}
+
+function updateMicAvailability(){
+ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!SR){
+   micBtn.disabled=true;
+   micBtn.style.opacity=".5";
+   micStatus.textContent="Le mode micro n'est pas disponible dans ce navigateur. Utilise le mode manuel.";
+   micStatus.className="micStatus err";
+ }else{
+   micBtn.disabled=false;
+   micBtn.style.opacity="1";
+   micStatus.textContent="Le micro est prêt. Le navigateur demandera l'autorisation au premier essai.";
+   micStatus.className="micStatus";
+ }
+}
+
+function startRecognition(){
+ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!SR)return false;
+ stopRecognition();
+ recognition=new SR();
+ recognition.lang="fr-FR";
+ recognition.continuous=true;
+ recognition.interimResults=true;
+ recognition.maxAlternatives=1;
+ recognitionRestartAllowed=true;
+
+ recognition.onstart=()=>{
+   micStatus.textContent="🎤 Micro actif : lis le texte à voix haute.";
+   micStatus.className="micStatus on";
+ };
+ recognition.onresult=(event)=>{
+   let finalText="", interimText="";
+   for(let i=event.resultIndex;i<event.results.length;i++){
+     const tr=event.results[i][0].transcript;
+     if(event.results[i].isFinal) finalText+=" "+tr;
+     else interimText+=" "+tr;
+   }
+   if(interimText.trim()) previewCurrentSyllables(interimText);
+   if(finalText.trim()){
+     clearLiveSyllables();
+     processTranscript(finalText);
+   }
+ };
+ recognition.onerror=(e)=>{
+   if(e.error==="not-allowed"||e.error==="service-not-allowed"){
+     micStatus.textContent="Accès au micro refusé. Autorise le micro dans le navigateur ou utilise le mode manuel.";
+   }else if(e.error==="no-speech"){
+     micStatus.textContent="Je n'ai pas entendu de voix. Continue à lire ou utilise le mode manuel.";
+   }else{
+     micStatus.textContent="Le micro a rencontré un problème. Tu peux continuer en mode manuel.";
+   }
+   micStatus.className="micStatus err";
+ };
+ recognition.onend=()=>{
+   if(running && micMode && recognitionRestartAllowed){
+     try{recognition.start();}catch(e){}
+   }
+ };
+ try{
+   recognition.start();
+   return true;
+ }catch(e){
+   micStatus.textContent="Impossible de démarrer le micro. Utilise Chrome/Edge et vérifie l'autorisation.";
+   micStatus.className="micStatus err";
+   return false;
+ }
+}
+
+function stopRecognition(){
+ recognitionRestartAllowed=false;
+ if(recognition){
+   try{recognition.stop();}catch(e){}
+   recognition=null;
+ }
+}
+
+function startClock(){
+ seconds=60; running=true; waitingMark=false; attemptStartTime=performance.now();
+ repeatBtn.classList.add("hidden");
+ clearMarks();
+ timerId=setInterval(()=>{
+   seconds--; updateTimer();
+   if(seconds<=0) finishTime();
+ },1000);
+}
+
+micBtn.onclick=()=>{
+ if(running)return;
+ micMode=true; recognizedCount=0; nextExpected=0;
+ clearMarks();
+ const ok=startRecognition();
+ if(!ok){micMode=false;return;}
+ startClock();
+ result.textContent="Lis à voix haute. Les mots reconnus se surlignent automatiquement.";
+ micBtn.classList.add("hidden"); startBtn.classList.add("hidden");
+};
+
+startBtn.onclick=()=>{
+ if(running)return;
+ micMode=false; stopRecognition();
+ startClock();
+ result.textContent="Lis à voix haute. Si tu atteins le dernier mot avant une minute, le mode micro arrête automatiquement le chrono, même si certains mots ont été mal lus ou mal reconnus.";
+ micBtn.classList.add("hidden"); startBtn.classList.add("hidden");
+};
+
+function updateTimer(){
+ timer.textContent=`0:${String(seconds).padStart(2,"0")}`;
+ timer.classList.remove("warn","danger");
+ if(seconds<=10)timer.classList.add("danger");
+ else if(seconds<=20)timer.classList.add("warn");
+}
+
+function finishTime(){
+ stopTimer(); running=false; seconds=0; updateTimer();
+ const elapsed=60;
+ if(micMode){
+   stopRecognition();
+   waitingMark=false;
+   const score=recognizedCount;
+   const wpm=saveAttempt(score,elapsed);
+   result.textContent=`Temps écoulé ! Le micro a reconnu environ ${score} mot${score>1?"s":""}. Débit : ${wpm} mots/min. Moyenne actuelle : ${average.textContent}.`;
+   micStatus.textContent="Le score et la surbrillance des syllabes sont des estimations de la reconnaissance vocale. Si le micro comprend mal, utilise le mode manuel au prochain essai.";
+   micStatus.className="micStatus";
+   if(trial<3) repeatBtn.classList.remove("hidden");
+   else showQuiz();
+ }else{
+   waitingMark=true;
+   result.textContent="Temps écoulé ! Clique sur le dernier mot que tu as lu.";
+ }
+}
+
+function markLast(i){
+ if(!waitingMark)return;
+ const words=[...textBox.querySelectorAll(".word")];
+ words.forEach((w,k)=>w.classList.toggle("marked",k<=i));
+ const score=i+1; waitingMark=false;
+ const wpm=saveAttempt(score,60);
+ result.textContent=`Bravo ! Tu as lu ${score} mot${score>1?"s":""} en une minute, soit ${wpm} mots/min. Moyenne actuelle : ${average.textContent}.`;
+ if(trial<3) repeatBtn.classList.remove("hidden");
+ else showQuiz();
+}
+
+repeatBtn.onclick=()=>{
+ trial++; seconds=60; running=false; waitingMark=false; micMode=false; recognizedCount=0; nextExpected=0; attemptStartTime=null;
+ stopRecognition(); clearMarks(); updateTrialUI();
+ result.textContent=""; timer.textContent="1:00"; timer.classList.remove("warn","danger");
+ repeatBtn.classList.add("hidden"); startBtn.classList.remove("hidden"); micBtn.classList.remove("hidden");
+ updateMicAvailability();
+};
+
+function updateAverage(){
+ const done=rates.filter(x=>x!==null);
+ if(done.length===0){
+   average.textContent="—";
+   return;
+ }
+ const avg=done.reduce((a,b)=>a+b,0)/done.length;
+ const shown=Number.isInteger(avg)?String(avg):avg.toFixed(1).replace(".",",");
+ average.textContent=shown+" mots/min";
+}
+
+function updateTrialUI(){
+ trialStat.textContent=trial+" / 3";
+ ["t1","t2","t3"].forEach((id,i)=>{
+   if(scores[i]===null){
+     document.getElementById(id).textContent="—";
+   }else{
+     document.getElementById(id).textContent=`${scores[i]} mot${scores[i]>1?"s":""} en ${formatSeconds(durations[i])} s → ${rates[i]} mots/min`;
+   }
+ });
+ const validRates=rates.filter(x=>x!==null);
+ best.textContent=validRates.length?Math.max(...validRates)+" mots/min":"—";
+ updateAverage();
+}
+
+function clearMarks(){
+ [...textBox.querySelectorAll(".word")].forEach(w=>w.classList.remove("marked","recognized"));
+ [...textBox.querySelectorAll(".syllable")].forEach(s=>s.classList.remove("live","done"));
+}
+
+function showQuiz(){
+ quiz.classList.remove("hidden"); quizBody.innerHTML="";
+ texts[idx].qs.forEach((q,qi)=>{
+   const box=document.createElement("div"); box.className="q";
+   const qt=document.createElement("div"); qt.className="qtitle"; qt.textContent=(qi+1)+". "+q.q; box.appendChild(qt);
+   q.choices.forEach((ch,ci)=>{
+     const b=document.createElement("button"); b.className="choice"; b.textContent=ch;
+     b.onclick=()=>{
+       [...box.querySelectorAll(".choice")].forEach(x=>x.disabled=true);
+       if(ci===q.a)b.classList.add("correct");
+       else{b.classList.add("wrong"); box.querySelectorAll(".choice")[q.a].classList.add("correct");}
+     };
+     box.appendChild(b);
+   });
+   quizBody.appendChild(box);
+ });
+}
+
+function stopTimer(){ if(timerId){clearInterval(timerId);timerId=null} }
+document.getElementById("homeBtn").onclick=()=>{stopTimer();stopRecognition();running=false;gameView.classList.add("hidden");menuView.classList.remove("hidden")};
+document.getElementById("nextBtn").onclick=()=>openText((idx+1)%texts.length);
+
+buildMenu();
+</script>
+</body>
+</html>
